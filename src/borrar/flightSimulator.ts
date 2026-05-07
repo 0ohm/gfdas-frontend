@@ -106,8 +106,16 @@ export function getSimulatedFlightData(): TelemetryPoint[] {
   return points;
 }
 
-let _cachedDown: ReturnType<typeof getDownsampledFieldData> | null = null;
-export function getDownsampledFieldData(targetPoints = 1500) {
+interface DownsampledData {
+  timestamps: number[];
+  values: number[];
+  xValues: number[];
+  yValues: number[];
+  zValues: number[];
+}
+
+let _cachedDown: DownsampledData | null = null;
+export function getDownsampledFieldData(targetPoints = 1500): DownsampledData {
   if (_cachedDown && _cachedDown.timestamps.length === targetPoints) return _cachedDown;
   const raw = getSimulatedFlightData();
   const step = Math.max(1, Math.floor(raw.length / targetPoints));
@@ -123,11 +131,18 @@ export function getDownsampledFieldData(targetPoints = 1500) {
   return _cachedDown;
 }
 
-let _cachedHeatmap: { lat: number; lng: number; value: number; timestamp: string }[] | null = null;
-export function getHeatmapPoints(everyN = 100) {
+interface HeatmapPointCache {
+  lat: number;
+  lng: number;
+  value: number;
+  timestamp: string;
+}
+
+let _cachedHeatmap: HeatmapPointCache[] | null = null;
+export function getHeatmapPoints(everyN = 100): HeatmapPointCache[] {
   if (_cachedHeatmap) return _cachedHeatmap;
   const raw = getSimulatedFlightData();
-  const pts: typeof _cachedHeatmap = [];
+  const pts: HeatmapPointCache[] = [];
   for (let i = 0; i < raw.length; i += everyN) {
     pts.push({ lat: raw[i].gps.latitude, lng: raw[i].gps.longitude, value: raw[i].magneticField.total, timestamp: raw[i].timestamp });
   }

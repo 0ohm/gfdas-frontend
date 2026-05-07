@@ -94,13 +94,13 @@ export default function VisorPage() {
       {viewMode === 'heatmap' && (
         <>
           <DataCard title="Mapa de Calor Magnetometrico" icon={faMagnet}>
-            <CanvasHeatmap points={heatmapPoints} height={500} />
+            <CanvasHeatmap points={heatmapPoints || []} height={500} />
           </DataCard>
           {/* Escala de color */}
           <div className="hmi-card">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold text-[#475569] uppercase">Escala de Intensidad (nT)</span>
-              <span className="text-[10px] text-[#475569]">{heatmapPoints.length} puntos renderizados</span>
+              <span className="text-[10px] text-[#475569]">{(heatmapPoints || []).length} puntos renderizados</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-[#475569]">{stats.min.toFixed(0)}</span>

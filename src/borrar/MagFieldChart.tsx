@@ -64,7 +64,7 @@ export default function MagFieldChart({
       title: title ? { display: true, text: title, font: { family: 'Inter', size: 12, weight: 700 as const }, color: '#001F2D', padding: { bottom: 12 } } : { display: false },
       tooltip: {
         backgroundColor: '#001F2D', titleFont: { family: 'Inter', size: 11, weight: 700 as const }, bodyFont: { family: 'Inter', size: 11 }, padding: 10, cornerRadius: 4,
-        callbacks: { label: (ctx: { dataset: { label?: string }; parsed: { y: number } }) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} nT` },
+        callbacks: { label: (ctx: { dataset: { label?: string }; parsed: { y: number | null } }) => `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(2) ?? 'N/A'} nT` },
       },
     },
     scales: {
