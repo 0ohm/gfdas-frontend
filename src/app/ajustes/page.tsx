@@ -17,16 +17,40 @@ export default function AjustesPage() {
   const sensor = mockSensorConfig;
   const system = mockSystemStatus;
   const [samplingRate, setSamplingRate] = useState(sensor.samplingRate);
-  const [autoComp, setAutoComp] = useState(sensor.autoCompensation);
-  const [filterType, setFilterType] = useState(sensor.filterType);
-  const [filterFreq, setFilterFreq] = useState(sensor.filterFrequency);
+  const [gain, setGain] = useState(1.0);
+  const [offset, setOffset] = useState(0.0);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingInfo, setIsSavingInfo] = useState(false);
+
+  // Info del sensor editable
+  const [sensorInfo, setSensorInfo] = useState({
+    type: sensor.sensorType,
+    serial: sensor.serialNumber,
+    firmware: sensor.firmwareVersion,
+    sensitivity: sensor.sensitivity,
+    rangeMin: sensor.dynamicRange.min,
+    rangeMax: sensor.dynamicRange.max,
+    drone: 'DJI Matrice 300 RTK' // Default mock value
+  });
+
+  // Conectividad editable
+  const [wifiConfig, setWifiConfig] = useState({
+    ssid: 'GFDAS_AP_01',
+    password: 'password123',
+  });
 
   const handleSave = async () => {
     setIsSaving(true);
-    console.log('[Ajustes] Guardando:', { samplingRate, autoComp, filterType, filterFreq });
+    console.log('[Ajustes] Guardando:', { samplingRate, gain, offset });
     // TODO: Llamar a updateSensorConfig()
     setTimeout(() => { setIsSaving(false); alert('Configuracion guardada (demo)'); }, 1000);
+  };
+
+  const handleSaveInfo = async () => {
+    setIsSavingInfo(true);
+    console.log('[Ajustes] Guardando info del sensor:', sensorInfo);
+    // TODO: Llamar a updateSensorInfo()
+    setTimeout(() => { setIsSavingInfo(false); alert('Informacion del sensor actualizada (demo)'); }, 1000);
   };
 
   const handleCalibrate = async () => {
@@ -45,24 +69,39 @@ export default function AjustesPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-headline-lg text-[#001F2D]">Ajustes del Sistema</h1>
-        <p className="text-body-md text-[#475569] mt-1">Configuracion del sensor y sistema</p>
+        <h1 className="text-xl sm:text-2xl lg:text-headline-lg text-[#001F2D] font-bold">Ajustes del Sistema</h1>
+        <p className="text-xs sm:text-sm text-[#475569] mt-1">Configuracion del sensor y sistema</p>
       </div>
 
       {/* Info del sensor */}
-      <DataCard title="Informacion del Sensor" icon={faMagnet}>
+      <DataCard title="Informacion del Equipo" icon={faMagnet}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <div><span className="hmi-label text-[10px]">Tipo</span><p className="text-sm font-bold">{sensor.sensorType}</p></div>
-          <div><span className="hmi-label text-[10px]">Serial</span><p className="text-sm font-bold font-mono">{sensor.serialNumber}</p></div>
-          <div><span className="hmi-label text-[10px]">Firmware</span><p className="text-sm font-bold">{sensor.firmwareVersion}</p></div>
-          <div><span className="hmi-label text-[10px]">Sensibilidad</span><p className="text-sm font-bold">{sensor.sensitivity} nT</p></div>
-          <div><span className="hmi-label text-[10px]">Rango Dinamico</span><p className="text-sm font-bold">{sensor.dynamicRange.min.toLocaleString()} - {sensor.dynamicRange.max.toLocaleString()} nT</p></div>
+          <div><span className="hmi-label text-[10px]">Tipo</span><input type="text" className="hmi-input w-full mt-1" value={sensorInfo.type} onChange={e => setSensorInfo({ ...sensorInfo, type: e.target.value })} /></div>
+          <div><span className="hmi-label text-[10px]">Serial</span><input type="text" className="hmi-input w-full mt-1 font-mono" value={sensorInfo.serial} onChange={e => setSensorInfo({ ...sensorInfo, serial: e.target.value })} /></div>
+          <div><span className="hmi-label text-[10px]">Dron</span><input type="text" className="hmi-input w-full mt-1" value={sensorInfo.drone} onChange={e => setSensorInfo({ ...sensorInfo, drone: e.target.value })} /></div>
+          <div><span className="hmi-label text-[10px]">Firmware</span><p className="text-sm font-bold mt-1 text-[#475569]">{sensorInfo.firmware}</p></div>
+          <div><span className="hmi-label text-[10px]">Sensibilidad (nT)</span><input type="number" step="0.001" className="hmi-input w-full mt-1" value={sensorInfo.sensitivity} onChange={e => setSensorInfo({ ...sensorInfo, sensitivity: Number(e.target.value) })} /></div>
+          <div>
+            <span className="hmi-label text-[10px]">Rango Min - Max (nT)</span>
+            <div className="flex gap-2 mt-1">
+              <input type="number" className="hmi-input w-1/2" value={sensorInfo.rangeMin} onChange={e => setSensorInfo({ ...sensorInfo, rangeMin: Number(e.target.value) })} />
+              <input type="number" className="hmi-input w-1/2" value={sensorInfo.rangeMax} onChange={e => setSensorInfo({ ...sensorInfo, rangeMax: Number(e.target.value) })} />
+            </div>
+          </div>
           <div>
             <span className="hmi-label text-[10px]">Calibracion</span>
-            <StatusIndicator status={sensor.calibrationStatus === 'valid' ? 'ok' : 'warning'} label={sensor.calibrationStatus === 'valid' ? 'Valida' : 'Expirada'} size="sm" />
+            <div className="mt-2">
+              <StatusIndicator status={sensor.calibrationStatus === 'valid' ? 'ok' : 'warning'} label={sensor.calibrationStatus === 'valid' ? 'Valida' : 'Expirada'} size="sm" />
+            </div>
           </div>
+        </div>
+        <div className="flex justify-end pt-4 mt-4 border-t border-[#C2C7CC]">
+          <button onClick={handleSaveInfo} disabled={isSavingInfo} className="hmi-btn-primary">
+            <FontAwesomeIcon icon={isSavingInfo ? faSyncAlt : faCheckCircle} className={`w-4 h-4 ${isSavingInfo ? 'animate-spin' : ''}`} />
+            {isSavingInfo ? 'Guardando...' : 'Guardar Info'}
+          </button>
         </div>
       </DataCard>
 
@@ -75,29 +114,12 @@ export default function AjustesPage() {
               <input id="input-sampling" type="number" value={samplingRate} onChange={e => setSamplingRate(Number(e.target.value))} min={1} max={100} className="hmi-input" />
             </div>
             <div>
-              <label htmlFor="select-filter" className="hmi-label"><FontAwesomeIcon icon={faFlask} className="w-3 h-3 mr-1.5" /> Tipo de Filtro</label>
-              <select id="select-filter" value={filterType} onChange={e => setFilterType(e.target.value as typeof filterType)} className="hmi-select">
-                <option value="none">Sin Filtro</option>
-                <option value="low_pass">Paso Bajo</option>
-                <option value="band_pass">Paso Banda</option>
-                <option value="median">Mediana</option>
-              </select>
+              <label htmlFor="input-gain" className="hmi-label">Ganancia</label>
+              <input id="input-gain" type="number" value={gain} onChange={e => setGain(Number(e.target.value))} step={0.1} className="hmi-input" />
             </div>
-            {filterType !== 'none' && (
-              <div>
-                <label htmlFor="input-filter-freq" className="hmi-label">Frecuencia de Corte (Hz)</label>
-                <input id="input-filter-freq" type="number" value={filterFreq} onChange={e => setFilterFreq(Number(e.target.value))} min={0.1} max={50} step={0.1} className="hmi-input" />
-              </div>
-            )}
-            <div className="flex items-center gap-3 min-h-[48px]">
-              <label htmlFor="toggle-autocomp" className="hmi-label mb-0">Auto-Compensacion</label>
-              <button
-                id="toggle-autocomp"
-                onClick={() => setAutoComp(p => !p)}
-                className={`relative w-12 h-6 rounded-full transition-colors ${autoComp ? 'bg-[#A8CF45]' : 'bg-[#C2C7CC]'}`}
-              >
-                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${autoComp ? 'translate-x-6' : 'translate-x-0.5'}`} />
-              </button>
+            <div>
+              <label htmlFor="input-offset" className="hmi-label">Offset (nT)</label>
+              <input id="input-offset" type="number" value={offset} onChange={e => setOffset(Number(e.target.value))} step={0.1} className="hmi-input" />
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[#C2C7CC]">
@@ -126,10 +148,25 @@ export default function AjustesPage() {
 
       {/* Red */}
       <DataCard title="Conectividad" icon={faWifi}>
-        <div className="grid grid-cols-3 gap-4">
-          <div><span className="hmi-label text-[10px]">Tipo</span><p className="text-sm font-bold uppercase">{system.network.type}</p></div>
-          <div><span className="hmi-label text-[10px]">RSSI</span><p className="text-sm font-bold">{system.network.rssi} dBm</p></div>
-          <div><span className="hmi-label text-[10px]">Latencia</span><p className="text-sm font-bold">{system.network.latency} ms</p></div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-4 border-b border-[#C2C7CC]">
+            <div><span className="hmi-label text-[10px]">Tipo</span><p className="text-sm font-bold uppercase">{system.network.type}</p></div>
+            <div><span className="hmi-label text-[10px]">RSSI</span><p className="text-sm font-bold">{system.network.rssi} dBm</p></div>
+            <div><span className="hmi-label text-[10px]">Latencia</span><p className="text-sm font-bold">{system.network.latency} ms</p></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="hmi-label text-[10px]">Punto de Acceso (SSID)</label>
+              <input type="text" className="hmi-input w-full mt-1" value={wifiConfig.ssid} onChange={e => setWifiConfig({ ...wifiConfig, ssid: e.target.value })} />
+            </div>
+            <div>
+              <label className="hmi-label text-[10px]">Contraseña Wi-Fi</label>
+              <input type="password" className="hmi-input w-full mt-1" value={wifiConfig.password} onChange={e => setWifiConfig({ ...wifiConfig, password: e.target.value })} />
+            </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <button onClick={handleSave} className="hmi-btn-secondary text-xs">Guardar Red</button>
+          </div>
         </div>
       </DataCard>
 

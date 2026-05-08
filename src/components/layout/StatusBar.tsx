@@ -1,34 +1,19 @@
-/* StatusBar.tsx — Barra de estado superior persistente (64px) */
+/* StatusBar.tsx — Barra de estado superior persistente */
 'use client';
 
+import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faBatteryFull,
-  faBatteryThreeQuarters,
-  faBatteryHalf,
-  faBatteryQuarter,
-  faBatteryEmpty,
   faSatelliteDish,
   faSignal,
   faCheckCircle,
   faExclamationTriangle,
   faTimesCircle,
+  faClock,
+  faHdd,
+  faTimes,
 } from '@fortawesome/free-solid-svg-icons';
 import { mockSystemStatus } from '@/lib/mock/data';
-
-function getBatteryIcon(percent: number) {
-  if (percent > 75) return faBatteryFull;
-  if (percent > 50) return faBatteryThreeQuarters;
-  if (percent > 25) return faBatteryHalf;
-  if (percent > 10) return faBatteryQuarter;
-  return faBatteryEmpty;
-}
-
-function getBatteryColor(percent: number) {
-  if (percent > 50) return 'text-[#A8CF45]';
-  if (percent > 20) return 'text-amber-500';
-  return 'text-[#E6007E]';
-}
 
 function getSignalBars(rssi: number) {
   if (rssi > -40) return 4;
@@ -38,121 +23,159 @@ function getSignalBars(rssi: number) {
   return 0;
 }
 
-interface StatusIndicatorProps {
-  status: 'ok' | 'warning' | 'error' | 'offline';
-  label: string;
-  value?: string;
-}
-
-function StatusIndicator({ status, label, value }: StatusIndicatorProps) {
-  const iconMap = {
-    ok: faCheckCircle,
-    warning: faExclamationTriangle,
-    error: faTimesCircle,
-    offline: faTimesCircle,
-  };
-  const colorMap = {
-    ok: 'text-[#A8CF45]',
-    warning: 'text-amber-500',
-    error: 'text-[#E6007E]',
-    offline: 'text-[#475569]',
-  };
-  const labelMap = {
-    ok: 'LISTO',
-    warning: 'ALERTA',
-    error: 'ERROR',
-    offline: 'SIN CONEXION',
-  };
-
-  return (
-    <div className="flex items-center gap-1.5">
-      <FontAwesomeIcon icon={iconMap[status]} className={`w-3.5 h-3.5 ${colorMap[status]}`} />
-      <span className="text-xs font-bold text-white/70 hidden sm:inline">{label}</span>
-      <span className={`text-xs font-bold ${colorMap[status]}`}>
-        {value || labelMap[status]}
-      </span>
-    </div>
-  );
-}
-
 export default function StatusBar() {
   const system = mockSystemStatus;
-  const batteryPercent = system.drone.batteryPercent;
   const signalBars = getSignalBars(system.network.rssi);
 
+  const storage = { usedGB: 45.2, totalGB: 128.0 };
+  const [currentTime, setCurrentTime] = useState<string>('--:--:--');
+  const [alerts, setAlerts] = useState<{ id: string; type: 'warning' | 'error'; msg: string }[]>([
+    { id: '1', type: 'warning', msg: 'Simulacro de alerta' }
+  ]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const d = new Date();
+      setCurrentTime(d.toLocaleTimeString('en-US', { hour12: true, timeZone: 'UTC' }) + ' UTC');
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const dismissAlert = (id: string) => setAlerts(prev => prev.filter(a => a.id !== id));
+
+  // GPS Status
+  let gpsStatusText = 'FALLA';
+  if (system.gps.connected) {
+    gpsStatusText = system.gps.hdop < 2 ? 'Quieto' : 'En Movimiento';
+  }
+
+  // MFS Status
+  const sensorStatusColor = system.sensor.connected
+    ? (system.sensor.status === 'healthy' ? 'text-[#A8CF45]' : 'text-amber-500')
+    : 'text-[#E6007E]';
+  const sensorStatusIcon = system.sensor.connected
+    ? (system.sensor.status === 'healthy' ? faCheckCircle : faExclamationTriangle)
+    : faTimesCircle;
+  const sensorStatusText = system.sensor.connected
+    ? (system.sensor.status === 'healthy' ? 'OK' : 'Advertencia')
+    : 'FALLA';
+
+  // Sistema General Status
+  const sistemaStatusColor = 'text-[#A8CF45]';
+  const sistemaStatusIcon = faCheckCircle;
+  const sistemaStatusText = 'OK';
+
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-[#001F2D] text-white z-50 shadow-status-bar">
-      <div className="h-full max-w-[1440px] mx-auto px-4 sm:px-6 flex items-center justify-between gap-4">
-        {/* Logo + Marca */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="bg-white/95 px-2 py-1 rounded-md flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.1)] backdrop-blur-sm">
-            <img src="/logo.webp" alt="GFDAS Logo" className="h-6 w-auto object-contain" />
-          </div>
-          <div className="hidden md:block">
-            <h1 className="text-sm font-extrabold tracking-wider leading-none">GFDAS</h1>
-            <p className="text-[10px] text-white/50 font-medium tracking-wide">MAG-DRONE SYSTEM</p>
-          </div>
-        </div>
+    <>
+      {/* Header: fila unica siempre, adaptada con tamanios mas compactos en movil */}
+      <header className="fixed top-0 left-0 right-0 h-14 sm:h-16 bg-[#001F2D] text-white z-50 shadow-status-bar">
+        <div className="h-full px-3 sm:px-4 lg:px-6 flex items-center gap-2 sm:gap-4">
 
-        {/* Indicadores centrales */}
-        <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto">
-          <StatusIndicator
-            status={system.sensor.connected ? (system.sensor.status === 'healthy' ? 'ok' : 'warning') : 'offline'}
-            label="SENSOR"
-            value={system.sensor.connected ? `${system.sensor.currentReading.toFixed(1)} nT` : undefined}
-          />
-          <StatusIndicator
-            status={system.gps.connected ? (system.gps.hdop < 2 ? 'ok' : 'warning') : 'offline'}
-            label="GPS"
-            value={system.gps.connected ? `${system.gps.satellites} SAT` : undefined}
-          />
-          <StatusIndicator
-            status={system.drone.connected ? 'ok' : 'offline'}
-            label="DRON"
-          />
-        </div>
+          {/* Logo */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="bg-white/95 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md flex items-center justify-center">
+              <img src="/logo.webp" alt="GFDAS Logo" className="h-5 sm:h-6 w-auto object-contain" />
+            </div>
+            <div className="hidden lg:block">
+              <h1 className="text-sm font-extrabold tracking-wider leading-none">GFDAS</h1>
+              <p className="text-[10px] text-white/50 font-medium tracking-wide">MAG-DRONE SYSTEM</p>
+            </div>
+          </div>
 
-        {/* Indicadores derecha */}
-        <div className="flex items-center gap-4 shrink-0">
-          {/* Senal */}
-          <div className="flex items-center gap-1.5">
-            <div className="flex items-end gap-[2px] h-4">
+          {/* Separador */}
+          <div className="w-px h-6 bg-white/15 shrink-0 hidden sm:block"></div>
+
+          {/* Indicadores centrales: flujo horizontal con scroll en caso extremo */}
+          <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide flex-1 min-w-0">
+
+            {/* GPS */}
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+              <FontAwesomeIcon icon={faSatelliteDish} className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${system.gps.connected ? 'text-[#A8CF45]' : 'text-[#475569]'}`} />
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase">GPS</span>
+              <span className={`text-[9px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded ${system.gps.connected ? 'bg-[#A8CF45]/15 text-[#A8CF45]' : 'bg-[#E6007E]/15 text-[#E6007E]'}`}>
+                {gpsStatusText}
+              </span>
+            </div>
+
+            <div className="w-px h-5 bg-white/10 shrink-0"></div>
+
+            {/* Sistema */}
+            <div className="flex items-center gap-1 shrink-0">
+              <FontAwesomeIcon icon={sistemaStatusIcon} className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${sistemaStatusColor}`} />
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase hidden sm:inline">SIS</span>
+              <span className={`text-[10px] sm:text-[11px] font-bold uppercase ${sistemaStatusColor}`}>{sistemaStatusText}</span>
+            </div>
+
+            <div className="w-px h-5 bg-white/10 shrink-0"></div>
+
+            {/* MFS */}
+            <div className="flex items-center gap-1 shrink-0">
+              <FontAwesomeIcon icon={sensorStatusIcon} className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${sensorStatusColor}`} />
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase hidden sm:inline">MFS</span>
+              <span className={`text-[10px] sm:text-[11px] font-bold uppercase ${sensorStatusColor}`}>{sensorStatusText}</span>
+            </div>
+
+            <div className="w-px h-5 bg-white/10 shrink-0"></div>
+
+            {/* Hora */}
+            <div className="flex items-center gap-1 shrink-0 text-white/80">
+              <FontAwesomeIcon icon={faClock} className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+              <span className="text-[10px] sm:text-[11px] font-bold font-mono">{currentTime}</span>
+            </div>
+
+            <div className="w-px h-5 bg-white/10 shrink-0 hidden sm:block"></div>
+
+            {/* Almacenamiento (oculto en pantallas muy pequenas) */}
+            <div className="hidden sm:flex items-center gap-1 shrink-0 text-white/80">
+              <FontAwesomeIcon icon={faHdd} className="w-3 h-3" />
+              <span className="text-[11px] font-bold">
+                {storage.usedGB.toFixed(1)}<span className="text-[9px] text-white/50"> / {storage.totalGB} GB</span>
+              </span>
+            </div>
+          </div>
+
+          {/* WiFi (siempre visible) */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto" title="Señal Wi-Fi">
+            <span className="text-[9px] text-white/50 font-bold uppercase hidden md:inline">Wi-Fi</span>
+            <div className="flex items-end gap-[2px] h-3.5 sm:h-4">
               {[1, 2, 3, 4].map((bar) => (
                 <div
                   key={bar}
-                  className={`w-[3px] rounded-sm transition-colors ${
-                    bar <= signalBars ? 'bg-[#A8CF45]' : 'bg-[#475569]'
-                  }`}
-                  style={{ height: `${bar * 4}px` }}
+                  className={`w-[2.5px] sm:w-[3px] rounded-sm transition-colors ${bar <= signalBars ? 'bg-[#A8CF45]' : 'bg-[#475569]'}`}
+                  style={{ height: `${bar * 3.5}px` }}
                 />
               ))}
             </div>
-            <FontAwesomeIcon icon={faSignal} className="w-3 h-3 text-white/50 hidden sm:block" />
-          </div>
-
-          {/* GPS */}
-          <div className="flex items-center gap-1.5">
-            <FontAwesomeIcon
-              icon={faSatelliteDish}
-              className={`w-3.5 h-3.5 ${system.gps.connected ? 'text-[#A8CF45]' : 'text-[#475569]'}`}
-            />
-            <span className="text-xs font-bold text-white/70 hidden sm:inline">
-              {system.gps.fixType.replace('_', ' ')}
-            </span>
-          </div>
-
-          {/* Bateria */}
-          <div className="flex items-center gap-1.5">
-            <FontAwesomeIcon
-              icon={getBatteryIcon(batteryPercent)}
-              className={`w-4 h-4 ${getBatteryColor(batteryPercent)}`}
-            />
-            <span className={`text-xs font-bold ${getBatteryColor(batteryPercent)}`}>
-              {batteryPercent}%
-            </span>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Alertas descartables: posicionadas debajo del header */}
+      {alerts.length > 0 && (
+        <div className="fixed top-16 sm:top-[4.5rem] right-3 sm:right-6 z-[90] flex flex-col items-end gap-2 pointer-events-none max-w-[320px] sm:max-w-sm">
+          {alerts.map(alert => (
+            <div
+              key={alert.id}
+              className={`pointer-events-auto flex items-center justify-between gap-3 px-4 py-2 rounded-lg shadow-lg border-l-4 w-full max-w-md ${alert.type === 'error' ? 'bg-[#FFF0F4] border-[#E6007E] text-[#001F2D]' : 'bg-[#FFF9E6] border-amber-500 text-[#001F2D]'
+                }`}
+            >
+              <div className="flex items-center gap-2">
+                <FontAwesomeIcon
+                  icon={alert.type === 'error' ? faTimesCircle : faExclamationTriangle}
+                  className={alert.type === 'error' ? 'text-[#E6007E]' : 'text-amber-500'}
+                />
+                <span className="text-sm font-semibold">{alert.msg}</span>
+              </div>
+              <button
+                onClick={() => dismissAlert(alert.id)}
+                className="text-[#001F2D]/50 hover:text-[#001F2D] transition-colors"
+              >
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

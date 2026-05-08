@@ -7,7 +7,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import BottomNav from "@/components/layout/BottomNav";
 
 export const metadata: Metadata = {
-  title: "GFDAS - MagDrone Data Interface",
+  title: "GFDAS - DAX",
   description: "Sistema de interfaz de datos magnetometricos para operaciones de dron. Visualizacion de telemetria, control de adquisicion y gestion de vuelos.",
   keywords: "magnetometria, dron, GFDAS, HMI, telemetria, datos geofisicos, mapa de calor",
 };
@@ -31,14 +31,14 @@ export default function RootLayout({
         <StatusBar />
         <Sidebar />
         <BottomNav />
-        
+
         {/* Contenido principal con offsets del StatusBar, Sidebar y BottomNav */}
         <main className="
-          pt-16 pb-[72px]
-          lg:pl-[260px] lg:pb-0
-          min-h-screen
+          pt-14 sm:pt-16 pb-24 lg:pb-8
+          lg:pl-[260px]
+          min-h-[100dvh]
         ">
-          <div className="p-4 sm:p-6 lg:p-8 max-w-[1440px] mx-auto">
+          <div className="p-3 sm:p-5 lg:p-8 max-w-[1440px] mx-auto">
             {children}
           </div>
         </main>

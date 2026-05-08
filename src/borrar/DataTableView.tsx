@@ -34,7 +34,7 @@ export default function DataTableView({ points, pageSize = 50 }: DataTableViewPr
       <div className="flex-1 overflow-auto border border-[#C2C7CC] rounded-lg">
         <table className="hmi-table text-[11px]">
           <thead>
-            <tr><th>#</th><th>Tiempo</th><th>B Total (nT)</th><th>Bx</th><th>By</th><th>Bz</th><th>Lat</th><th>Lng</th><th>Alt</th><th>HDOP</th><th>SAT</th><th>Bat%</th></tr>
+            <tr><th>#</th><th>Tiempo</th><th>B Total (nT)</th><th>Bx</th><th>By</th><th>Bz</th><th>Lat</th><th>Lng</th><th>Alt</th><th>HDOP</th><th>SAT</th></tr>
           </thead>
           <tbody>
             {pageData.map(p => (
@@ -50,7 +50,6 @@ export default function DataTableView({ points, pageSize = 50 }: DataTableViewPr
                 <td className="hmi-metric">{p.gps.altitude.toFixed(1)}</td>
                 <td>{p.gps.hdop.toFixed(2)}</td>
                 <td>{p.gps.satellites}</td>
-                <td>{p.drone.batteryPercent.toFixed(0)}</td>
               </tr>
             ))}
           </tbody>

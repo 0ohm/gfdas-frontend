@@ -20,7 +20,7 @@ export const mockFlights: Flight[] = [
     altitude: 40,
     lineSpacing: 25,
     area: 12.5,
-    notes: 'Condiciones optimas, viento bajo',
+    notes: 'Condiciones optimas',
     gpsQuality: { hdop: 0.8, satelliteCount: 14, fixType: 'RTK' },
     sensorSummary: { mean: 48250.3, min: 47890.1, max: 48610.5, stdDev: 85.2 },
     createdAt: '2023-10-27T08:00:00Z',

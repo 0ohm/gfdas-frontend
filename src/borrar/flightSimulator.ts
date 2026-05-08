@@ -12,10 +12,10 @@ const DURATION_S = 300;
 const TOTAL_SAMPLES = SPS * DURATION_S;
 const SURVEY_CENTER_LAT = -23.63450;
 const SURVEY_CENTER_LNG = -70.39620;
-const SURVEY_SIZE_M = 400;
+const SURVEY_SIZE_M = 200;
 const LINE_COUNT = 10;
 const LINE_SPACING_M = SURVEY_SIZE_M / LINE_COUNT;
-const FLIGHT_SPEED_MS = 3.5;
+const FLIGHT_SPEED_MS = 8.0;
 const ALTITUDE_AGL = 40;
 const ALTITUDE_MSL = 1240;
 const BASE_FIELD_NT = 24200;
@@ -39,21 +39,51 @@ function dipoleMagAnomaly(x: number, y: number, z: number, x0: number, y0: numbe
 function getSerpentinPosition(sampleIndex: number): { x: number; y: number; heading: number } {
   const time = sampleIndex / SPS;
   const dist = time * FLIGHT_SPEED_MS;
-  const totalLineDist = SURVEY_SIZE_M + LINE_SPACING_M;
-  const lineIdx = Math.min(Math.floor(dist / totalLineDist), LINE_COUNT - 1);
+  const turnDist = (Math.PI * LINE_SPACING_M) / 2;
+  const totalLineDist = SURVEY_SIZE_M + turnDist;
+  
+  if (dist >= totalLineDist * LINE_COUNT) {
+     const endX = (LINE_COUNT - 1) * LINE_SPACING_M - SURVEY_SIZE_M / 2;
+     const endY = ((LINE_COUNT - 1) % 2 === 0) ? SURVEY_SIZE_M / 2 : -SURVEY_SIZE_M / 2;
+     return { 
+       x: endX + gaussianNoise(0, 0.2), 
+       y: endY + gaussianNoise(0, 0.2), 
+       heading: ((LINE_COUNT - 1) % 2 === 0) ? 180 : 0 
+     };
+  }
+
+  const lineIdx = Math.floor(dist / totalLineDist);
   const distInLine = dist % totalLineDist;
   const isEven = lineIdx % 2 === 0;
+  
   let x: number, y: number, heading: number;
+  
   if (distInLine <= SURVEY_SIZE_M) {
     const progress = distInLine / SURVEY_SIZE_M;
     x = lineIdx * LINE_SPACING_M - SURVEY_SIZE_M / 2;
     y = isEven ? -SURVEY_SIZE_M / 2 + progress * SURVEY_SIZE_M : SURVEY_SIZE_M / 2 - progress * SURVEY_SIZE_M;
     heading = isEven ? 0 : 180;
+    
+    // Wobble lateral realista por viento cruzado
+    x += Math.sin(dist * 0.05) * 0.5 + gaussianNoise(0, 0.2);
+    y += gaussianNoise(0, 0.2);
   } else {
-    const turnProgress = (distInLine - SURVEY_SIZE_M) / LINE_SPACING_M;
-    x = (lineIdx + turnProgress) * LINE_SPACING_M - SURVEY_SIZE_M / 2;
-    y = isEven ? SURVEY_SIZE_M / 2 : -SURVEY_SIZE_M / 2;
-    heading = 90;
+    // Giro de U en semicirculo en lugar de cuadrado bloque
+    const turnProgress = (distInLine - SURVEY_SIZE_M) / turnDist;
+    const R = LINE_SPACING_M / 2;
+    const xc = lineIdx * LINE_SPACING_M - SURVEY_SIZE_M / 2 + R;
+    
+    if (isEven) {
+      const yc = SURVEY_SIZE_M / 2;
+      x = xc - R * Math.cos(Math.PI * turnProgress);
+      y = yc + R * Math.sin(Math.PI * turnProgress);
+      heading = turnProgress * 180;
+    } else {
+      const yc = -SURVEY_SIZE_M / 2;
+      x = xc - R * Math.cos(Math.PI * turnProgress);
+      y = yc - R * Math.sin(Math.PI * turnProgress);
+      heading = 180 + turnProgress * 180;
+    }
   }
   return { x, y, heading };
 }

@@ -6,14 +6,14 @@ import { usePathname } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faTachometerAlt,
-  faPlus,
+  faChartLine,
   faHistory,
   faCog,
 } from '@fortawesome/free-solid-svg-icons';
 
 const navItems = [
   { href: '/', label: 'Panel', icon: faTachometerAlt },
-  { href: '/nuevo-vuelo', label: 'Nuevo Vuelo', icon: faPlus },
+  { href: '/visor', label: 'Visor', icon: faChartLine },
   { href: '/historial', label: 'Historial', icon: faHistory },
   { href: '/ajustes', label: 'Ajustes', icon: faCog },
 ];
@@ -22,7 +22,7 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-[72px] bg-white border-t-2 border-[#001F2D] z-50 lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 h-[72px] bg-white border-t-2 border-[#001F2D] z-[100] lg:hidden shadow-[0_-4px_15px_rgba(0,0,0,0.05)]">
       <div className="h-full flex items-center justify-around px-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href || 

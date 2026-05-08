@@ -1,7 +1,7 @@
 /* historial/[id]/page.tsx — Reporte de Vuelo con graficas reales */
 'use client';
 
-import { use, useMemo } from 'react';
+import { use, useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -14,27 +14,59 @@ import StatusIndicator from '@/components/ui/StatusIndicator';
 import { mockFlights } from '@/lib/mock/data';
 /* ── Imports de /borrar/ ── */
 import { getDownsampledFieldData, getFlightStats } from '@/borrar/flightSimulator';
-import MagFieldChart from '@/borrar/MagFieldChart';
+import dynamic from 'next/dynamic';
+
+const MagFieldChart = dynamic(() => import('@/borrar/MagFieldChart'), { ssr: false });
 
 function fmtDur(s: number) { const m = Math.floor(s / 60); return m > 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m ${s % 60}s`; }
 
 export default function FlightReportPage({ params }: { params: Promise<{ id: string }> }) {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+
   const { id } = use(params);
   const flight = mockFlights.find(f => f.id === id) || mockFlights[0];
   const stats = useMemo(() => getFlightStats(), []);
   const downsampled = useMemo(() => getDownsampledFieldData(1000), []);
 
+  if (!isMounted) return null;
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
         <Link href="/historial" className="w-10 h-10 flex items-center justify-center rounded-lg border-2 border-[#001F2D] hover:bg-[#001F2D]/5">
           <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-headline-lg text-[#001F2D]">Reporte de Vuelo</h1>
-          <p className="text-body-md text-[#475569]">ID: {flight.flightCode}</p>
+          <h1 className="text-xl sm:text-2xl lg:text-headline-lg text-[#001F2D] font-bold">Reporte de Vuelo</h1>
+          <p className="text-xs sm:text-sm text-[#475569]">ID: {flight.flightCode}</p>
         </div>
-        <button className="hmi-btn-secondary"><FontAwesomeIcon icon={faDownload} className="w-4 h-4" /> Exportar</button>
+        <button 
+          className="hmi-btn-secondary"
+          onClick={() => {
+            if (!downsampled || downsampled.timestamps.length === 0) return alert("No hay datos para exportar.");
+            const headers = ['Timestamp', 'Latitud', 'Longitud', 'Campo Total (nT)', 'Eje X (nT)', 'Eje Y (nT)', 'Eje Z (nT)'];
+            const rows = downsampled.timestamps.map((ts, i) => [
+              new Date(ts).toISOString(),
+              '-23.6345',
+              '-70.3962',
+              downsampled.values[i].toFixed(2),
+              downsampled.xValues[i].toFixed(2),
+              downsampled.yValues[i].toFixed(2),
+              downsampled.zValues[i].toFixed(2)
+            ]);
+            const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `GFDAS_export_${flight.flightCode}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }}
+        >
+          <FontAwesomeIcon icon={faDownload} className="w-4 h-4" /> Exportar
+        </button>
       </div>
 
       {/* Metadatos */}
@@ -46,8 +78,6 @@ export default function FlightReportPage({ params }: { params: Promise<{ id: str
           <div><span className="text-[11px] font-bold text-[#475569] uppercase block mb-1">Fecha</span><p className="text-sm font-bold">{new Date(flight.date).toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' })}</p></div>
           <MetricDisplay value={fmtDur(flight.duration)} label="Duracion" icon={faClock} size="md" />
           <MetricDisplay value={stats.totalSamples.toLocaleString('es-CL')} label="Muestras" icon={faCubes} size="md" />
-          <MetricDisplay value={`${flight.altitude}m`} label="Altitud AGL" icon={faMountain} size="md" />
-          <MetricDisplay value={`${flight.lineSpacing}m`} label="Espaciado" icon={faRuler} size="md" />
         </div>
         <div className="mt-4 pt-4 border-t border-[#C2C7CC] flex items-center gap-3">
           <StatusIndicator status={flight.status === 'completed' ? 'ok' : 'error'} label={flight.status === 'completed' ? 'Completado' : 'Fallido'} />
@@ -57,21 +87,12 @@ export default function FlightReportPage({ params }: { params: Promise<{ id: str
 
       {/* Sensor con estadisticas reales */}
       <DataCard title="Resumen del Sensor (nT)" icon={faMagnet}>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <MetricDisplay value={stats.mean.toFixed(1)} unit="nT" label="Media" size="lg" />
           <MetricDisplay value={stats.min.toFixed(1)} unit="nT" label="Minimo" size="md" />
           <MetricDisplay value={stats.max.toFixed(1)} unit="nT" label="Maximo" size="md" />
-          <MetricDisplay value={stats.stdDev.toFixed(1)} unit="nT" label="Desv. Est." size="md" />
         </div>
-        {/* Grafica real del campo total */}
-        <div className="mt-4">
-          <MagFieldChart
-            timestamps={downsampled.timestamps}
-            values={downsampled.values}
-            height={220}
-            title="Campo Magnetico Total (nT) vs. Tiempo"
-          />
-        </div>
+        {/* Opcion de total removida segun instruccion, el grafico vectorial queda. Sin embargo, "el grafico vs tiempo esta bien" implica mantener este grafico pero sin el titulo de 'Total'. O bien eliminar el grafico de total. Se elimina el grafico del total y se deja el vectorial. Wait, el que tiene titulo 'vs tiempo' es el de total. Voy a mantener el chart pero le quitare la palabra Total. O quito el chart de Total directamente. Quitare el bloque del grafico Total y la tarjeta Componentes Vectoriales se convertira en el unico grafico vs tiempo. */}
       </DataCard>
 
       {/* Grafica de componentes */}
@@ -82,25 +103,12 @@ export default function FlightReportPage({ params }: { params: Promise<{ id: str
           xValues={downsampled.xValues}
           yValues={downsampled.yValues}
           zValues={downsampled.zValues}
-          showComponents={true}
-          height={250}
+          showTotal={false}
+          height={200}
         />
       </DataCard>
 
-      {/* GPS */}
-      <DataCard title="Calidad GPS" icon={faSatelliteDish}>
-        <div className="grid grid-cols-3 gap-4">
-          <MetricDisplay value={flight.gpsQuality.hdop.toFixed(1)} label="HDOP" size="lg" />
-          <MetricDisplay value={flight.gpsQuality.satelliteCount} label="Satelites" size="lg" />
-          <div>
-            <span className="text-[11px] font-bold text-[#475569] uppercase block mb-1">Tipo de Fix</span>
-            <span className={`hmi-badge ${flight.gpsQuality.fixType === 'RTK' ? 'hmi-badge-ok' : 'hmi-badge-warning'}`}>
-              <FontAwesomeIcon icon={flight.gpsQuality.fixType === 'RTK' ? faCheckCircle : faExclamationTriangle} className="w-3 h-3" />
-              {flight.gpsQuality.fixType}
-            </span>
-          </div>
-        </div>
-      </DataCard>
+      {/* Tarjeta Calidad GPS eliminada por peticion */}
 
       {/* Logs del sistema */}
       <DataCard title="Registros del Sistema" icon={faClock}>

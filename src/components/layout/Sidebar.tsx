@@ -15,8 +15,6 @@ import {
 
 const navItems = [
   { href: '/', label: 'Panel Principal', icon: faTachometerAlt, description: 'Resumen del sistema' },
-  { href: '/nuevo-vuelo', label: 'Nuevo Vuelo', icon: faPlus, description: 'Configurar mision' },
-  { href: '/adquisicion', label: 'Adquisicion', icon: faRocket, description: 'Control en vivo' },
   { href: '/visor', label: 'Visor de Datos', icon: faChartLine, description: 'Mapa de calor' },
   { href: '/historial', label: 'Historial', icon: faHistory, description: 'Vuelos anteriores' },
   { href: '/ajustes', label: 'Ajustes', icon: faCog, description: 'Configuracion' },
@@ -33,7 +31,7 @@ export default function Sidebar() {
           <img src="/logo.webp" alt="GFDAS Logo" className="h-8 w-auto object-contain" />
           <div>
             <h2 className="text-sm font-extrabold text-[#001F2D] tracking-wider">GFDAS</h2>
-            <p className="text-[11px] text-[#475569] font-medium">MagDrone Interface</p>
+            <p className="text-[11px] text-[#475569] font-medium">DAX</p>
           </div>
         </div>
       </div>
@@ -62,14 +60,12 @@ export default function Sidebar() {
             >
               <FontAwesomeIcon
                 icon={item.icon}
-                className={`w-4.5 h-4.5 shrink-0 transition-colors ${
-                  isActive ? 'text-[#A8CF45]' : 'text-[#475569] group-hover:text-[#001F2D]'
-                }`}
+                className={`w-4.5 h-4.5 shrink-0 transition-colors ${isActive ? 'text-[#A8CF45]' : 'text-[#475569] group-hover:text-[#001F2D]'
+                  }`}
               />
               <div>
-                <span className={`text-sm font-bold block leading-tight ${
-                  isActive ? 'text-[#001F2D]' : 'text-[#475569] group-hover:text-[#001F2D]'
-                }`}>
+                <span className={`text-sm font-bold block leading-tight ${isActive ? 'text-[#001F2D]' : 'text-[#475569] group-hover:text-[#001F2D]'
+                  }`}>
                   {item.label}
                 </span>
                 <span className="text-[10px] text-[#475569]/70 hidden xl:block">
@@ -84,7 +80,7 @@ export default function Sidebar() {
       {/* Footer */}
       <div className="px-5 py-4 border-t border-[#C2C7CC] text-[10px] text-[#475569]">
         <p className="font-bold">Firmware v2.4.1</p>
-        <p className="mt-0.5 opacity-70">GFDAS Magnetometric HMI</p>
+        <p className="mt-0.5 opacity-70">GFDAS DAX</p>
       </div>
     </aside>
   );

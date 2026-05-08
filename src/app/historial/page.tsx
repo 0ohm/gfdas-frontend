@@ -22,6 +22,7 @@ export default function HistorialPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const toggleSort = (f: SortField) => {
     if (sortField === f) setSortOrder(o => o === 'asc' ? 'desc' : 'asc');
@@ -44,14 +45,39 @@ export default function HistorialPage() {
     return list;
   }, [search, statusFilter, sortField, sortOrder]);
 
+  const toggleAll = () => {
+    if (selectedIds.length === flights.length && flights.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(flights.map(f => f.id));
+    }
+  };
+
+  const toggleOne = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleBulkDownload = () => {
+    if (selectedIds.length === 0) return;
+    alert(`Descargando ${selectedIds.length} archivos CSV...`);
+    // En prod aca se comprime o se bajan iterativamente
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.length === 0) return;
+    if (confirm(`¿Seguro que desea borrar ${selectedIds.length} vuelos permanentemente?`)) {
+      alert(`Borrados ${selectedIds.length} vuelos.`);
+      setSelectedIds([]);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-headline-lg text-[#001F2D]">Historial de Vuelos</h1>
-          <p className="text-body-md text-[#475569] mt-1">{flights.length} vuelos registrados</p>
+          <h1 className="text-xl sm:text-2xl lg:text-headline-lg text-[#001F2D] font-bold">Historial de Vuelos</h1>
+          <p className="text-xs sm:text-sm text-[#475569] mt-1">{flights.length} vuelos registrados</p>
         </div>
-        <Link href="/nuevo-vuelo" className="hmi-btn-primary">Nuevo Vuelo</Link>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -71,10 +97,33 @@ export default function HistorialPage() {
       </div>
 
       <DataCard title="Registro de Vuelos" icon={faHistory}>
-        <div className="overflow-x-auto -mx-5">
+        {/* Acciones Masivas */}
+        {selectedIds.length > 0 && (
+          <div className="mb-4 p-3 bg-[#F8F9FA] border border-[#C2C7CC] rounded-lg flex flex-wrap items-center gap-4 animate-fade-in">
+            <span className="text-sm font-bold text-[#001F2D]">{selectedIds.length} vuelos seleccionados</span>
+            <div className="flex gap-2">
+              <button onClick={handleBulkDownload} className="hmi-btn-secondary py-1.5 text-xs">
+                <FontAwesomeIcon icon={faDownload} className="w-3 h-3" /> Descargar CSVs
+              </button>
+              <button onClick={handleBulkDelete} className="hmi-btn-critical py-1.5 text-xs">
+                <FontAwesomeIcon icon={faTrash} className="w-3 h-3" /> Borrar
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="overflow-x-auto -mx-5 px-1">
           <table className="hmi-table">
             <thead>
               <tr>
+                <th className="w-10 text-center">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedIds.length === flights.length && flights.length > 0} 
+                    onChange={toggleAll}
+                    className="w-4 h-4 rounded border-[#C2C7CC] text-[#A8CF45] focus:ring-[#A8CF45]"
+                  />
+                </th>
                 <th>Codigo</th>
                 <th onClick={() => toggleSort('location')}><span className="cursor-pointer">Ubicacion <FontAwesomeIcon icon={sortIcon('location')} className="w-3 h-3 ml-1 opacity-50" /></span></th>
                 <th onClick={() => toggleSort('date')}><span className="cursor-pointer">Fecha <FontAwesomeIcon icon={sortIcon('date')} className="w-3 h-3 ml-1 opacity-50" /></span></th>
@@ -87,7 +136,15 @@ export default function HistorialPage() {
             </thead>
             <tbody>
               {flights.map(f => (
-                <tr key={f.id}>
+                <tr key={f.id} className={selectedIds.includes(f.id) ? 'bg-[#A8CF45]/10' : ''}>
+                  <td className="text-center">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedIds.includes(f.id)}
+                      onChange={() => toggleOne(f.id)}
+                      className="w-4 h-4 rounded border-[#C2C7CC] text-[#A8CF45] focus:ring-[#A8CF45]"
+                    />
+                  </td>
                   <td><Link href={`/historial/${f.id}`} className="font-bold text-[#001F2D] hover:text-[#A8CF45]">{f.flightCode}</Link></td>
                   <td className="text-[#475569] max-w-[180px] truncate">{f.location}</td>
                   <td className="text-[#475569] whitespace-nowrap">{new Date(f.date).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
