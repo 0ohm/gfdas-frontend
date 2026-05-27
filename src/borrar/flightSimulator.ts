@@ -194,6 +194,7 @@ export function getSimulatedFlight(): Flight {
   return {
     id: 'flt-001', flightCode: 'FLT-20231027-A1', location: 'Faena Esperanza',
     date: '2023-10-27T08:30:00Z', duration: DURATION_S, samplesCollected: TOTAL_SAMPLES,
+    flightsCount: 1,
     status: 'completed', operator: 'Carlos Mendoza', droneId: 'DRN-MAG-01',
     altitude: ALTITUDE_AGL, lineSpacing: LINE_SPACING_M, area: (SURVEY_SIZE_M ** 2) / 10000,
     notes: `Survey completo, ${SPS} SPS, patron serpentin, ${LINE_COUNT} lineas`,
