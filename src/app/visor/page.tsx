@@ -63,9 +63,9 @@ export default function VisorPage() {
         </div>
       </div>
 
-      {/* Selector de vuelo */}
+      {/* Selector de proyecto */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-        <label htmlFor="select-flight-viewer" className="hmi-label mb-0 text-xs sm:text-sm shrink-0">Vuelo:</label>
+        <label htmlFor="select-flight-viewer" className="hmi-label mb-0 text-xs sm:text-sm shrink-0">Proyecto:</label>
         <select
           id="select-flight-viewer"
           value={selectedFlight}
@@ -73,7 +73,9 @@ export default function VisorPage() {
           className="hmi-select w-full sm:w-auto sm:min-w-[280px] sm:flex-1 lg:flex-none"
         >
           {mockFlights.filter(f => f.status === 'completed').map(f => (
-            <option key={f.id} value={f.id}>{f.flightCode} - {f.location}</option>
+            <option key={f.id} value={f.id}>
+              [{new Date(f.date).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}] - {f.flightCode} - {f.location}
+            </option>
           ))}
         </select>
         <button 

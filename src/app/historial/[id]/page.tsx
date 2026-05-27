@@ -38,7 +38,7 @@ export default function FlightReportPage({ params }: { params: Promise<{ id: str
           <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-xl sm:text-2xl lg:text-headline-lg text-[#001F2D] font-bold">Reporte de Vuelo</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-headline-lg text-[#001F2D] font-bold">Reporte de Proyecto</h1>
           <p className="text-xs sm:text-sm text-[#475569]">ID: {flight.flightCode}</p>
         </div>
         <button 
@@ -69,8 +69,21 @@ export default function FlightReportPage({ params }: { params: Promise<{ id: str
         </button>
       </div>
 
+      {/* Grafica de componentes (Prioridad de visualización) */}
+      <DataCard title="Componentes Vectoriales" icon={faMagnet}>
+        <MagFieldChart
+          timestamps={downsampled.timestamps}
+          values={downsampled.values}
+          xValues={downsampled.xValues}
+          yValues={downsampled.yValues}
+          zValues={downsampled.zValues}
+          showTotal={false}
+          height={200}
+        />
+      </DataCard>
+
       {/* Metadatos */}
-      <DataCard title="Metadatos del Vuelo" icon={faRocket}>
+      <DataCard title="Metadatos del Proyecto" icon={faRocket}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div><span className="text-[11px] font-bold text-[#475569] uppercase block mb-1">Ubicacion</span><p className="text-sm font-bold">{flight.location}</p></div>
           <div><span className="text-[11px] font-bold text-[#475569] uppercase block mb-1">Operador</span><p className="text-sm font-bold">{flight.operator}</p></div>
@@ -78,6 +91,7 @@ export default function FlightReportPage({ params }: { params: Promise<{ id: str
           <div><span className="text-[11px] font-bold text-[#475569] uppercase block mb-1">Fecha</span><p className="text-sm font-bold">{new Date(flight.date).toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' })}</p></div>
           <MetricDisplay value={fmtDur(flight.duration)} label="Duracion" icon={faClock} size="md" />
           <MetricDisplay value={stats.totalSamples.toLocaleString('es-CL')} label="Muestras" icon={faCubes} size="md" />
+          <MetricDisplay value={String(flight.flightsCount || 1)} label="Vuelos" icon={faRocket} size="md" />
         </div>
         <div className="mt-4 pt-4 border-t border-[#C2C7CC] flex items-center gap-3">
           <StatusIndicator status={flight.status === 'completed' ? 'ok' : 'error'} label={flight.status === 'completed' ? 'Completado' : 'Fallido'} />
@@ -93,19 +107,6 @@ export default function FlightReportPage({ params }: { params: Promise<{ id: str
           <MetricDisplay value={stats.max.toFixed(1)} unit="nT" label="Maximo" size="md" />
         </div>
         {/* Opcion de total removida segun instruccion, el grafico vectorial queda. Sin embargo, "el grafico vs tiempo esta bien" implica mantener este grafico pero sin el titulo de 'Total'. O bien eliminar el grafico de total. Se elimina el grafico del total y se deja el vectorial. Wait, el que tiene titulo 'vs tiempo' es el de total. Voy a mantener el chart pero le quitare la palabra Total. O quito el chart de Total directamente. Quitare el bloque del grafico Total y la tarjeta Componentes Vectoriales se convertira en el unico grafico vs tiempo. */}
-      </DataCard>
-
-      {/* Grafica de componentes */}
-      <DataCard title="Componentes Vectoriales" icon={faMagnet}>
-        <MagFieldChart
-          timestamps={downsampled.timestamps}
-          values={downsampled.values}
-          xValues={downsampled.xValues}
-          yValues={downsampled.yValues}
-          zValues={downsampled.zValues}
-          showTotal={false}
-          height={200}
-        />
       </DataCard>
 
       {/* Tarjeta Calidad GPS eliminada por peticion */}

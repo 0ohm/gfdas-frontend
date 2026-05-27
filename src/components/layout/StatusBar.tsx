@@ -12,8 +12,10 @@ import {
   faClock,
   faHdd,
   faTimes,
+  faPause,
 } from '@fortawesome/free-solid-svg-icons';
 import { mockSystemStatus } from '@/lib/mock/data';
+import { useMockProjectState } from '@/borrar/useMockProjectState';
 
 function getSignalBars(rssi: number) {
   if (rssi > -40) return 4;
@@ -24,6 +26,7 @@ function getSignalBars(rssi: number) {
 }
 
 export default function StatusBar() {
+  const { state: mockAcquisitionStatus, isLoaded } = useMockProjectState();
   const system = mockSystemStatus;
   const signalBars = getSignalBars(system.network.rssi);
 
@@ -150,9 +153,26 @@ export default function StatusBar() {
         </div>
       </header>
 
-      {/* Alertas descartables: posicionadas debajo del header */}
+      {/* Banner de Proyecto Activo */}
+      {isLoaded && mockAcquisitionStatus.projectState !== 'stopped' && (
+        <div className="fixed top-14 sm:top-16 left-0 right-0 h-8 sm:h-10 bg-[#A8CF45] text-[#001F2D] z-40 flex items-center justify-center px-4 shadow-sm animate-fade-in">
+          <div className="flex items-center gap-2 font-bold text-xs sm:text-sm">
+            <FontAwesomeIcon icon={mockAcquisitionStatus.projectState === 'active' ? faCheckCircle : faPause} className="text-[#001F2D]" />
+            <span>
+              {mockAcquisitionStatus.projectState === 'active' ? 'PROYECTO EN CURSO' : 'PROYECTO PAUSADO'}
+            </span>
+            {mockAcquisitionStatus.source === 'hardware' && (
+              <span className="ml-2 px-2 py-0.5 bg-[#001F2D] text-[#A8CF45] rounded-full text-[10px] uppercase hidden sm:inline-block">
+                INICIADO EN HARDWARE
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Alertas descartables: posicionadas debajo del header (y del banner si existe) */}
       {alerts.length > 0 && (
-        <div className="fixed top-16 sm:top-[4.5rem] right-3 sm:right-6 z-[90] flex flex-col items-end gap-2 pointer-events-none max-w-[320px] sm:max-w-sm">
+        <div className={`fixed right-3 sm:right-6 z-[90] flex flex-col items-end gap-2 pointer-events-none max-w-[320px] sm:max-w-sm transition-all ${isLoaded && mockAcquisitionStatus.projectState !== 'stopped' ? 'top-24 sm:top-28' : 'top-16 sm:top-[4.5rem]'}`}>
           {alerts.map(alert => (
             <div
               key={alert.id}

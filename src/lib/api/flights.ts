@@ -9,6 +9,7 @@ export interface Flight {
   date: string;                 // ISO date
   duration: number;             // Segundos
   samplesCollected: number;
+  flightsCount: number;         // Cantidad de vuelos fisicos (baterias) en el proyecto
   status: 'completed' | 'in_progress' | 'failed' | 'pending';
   operator: string;
   droneId: string;

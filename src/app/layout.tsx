@@ -5,6 +5,7 @@ import "@/lib/fontawesome";
 import StatusBar from "@/components/layout/StatusBar";
 import Sidebar from "@/components/layout/Sidebar";
 import BottomNav from "@/components/layout/BottomNav";
+import HardwareProjectModal from "@/components/ui/HardwareProjectModal";
 
 export const metadata: Metadata = {
   title: "GFDAS - DAX",
@@ -31,6 +32,7 @@ export default function RootLayout({
         <StatusBar />
         <Sidebar />
         <BottomNav />
+        <HardwareProjectModal />
 
         {/* Contenido principal con offsets del StatusBar, Sidebar y BottomNav */}
         <main className="

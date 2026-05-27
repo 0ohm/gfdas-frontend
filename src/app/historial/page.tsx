@@ -2,7 +2,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faHistory, faSearch, faFilter, faSortUp, faSortDown, faSort,
@@ -18,8 +21,11 @@ type SortOrder = 'asc' | 'desc';
 function fmtDur(s: number) { const m = Math.floor(s / 60); return m > 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; }
 
 export default function HistorialPage() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -34,6 +40,9 @@ export default function HistorialPage() {
     let list = [...mockFlights];
     if (search) { const q = search.toLowerCase(); list = list.filter(f => f.flightCode.toLowerCase().includes(q) || f.location.toLowerCase().includes(q)); }
     if (statusFilter !== 'all') list = list.filter(f => f.status === statusFilter);
+    if (startDate) list = list.filter(f => new Date(f.date) >= startDate);
+    if (endDate) list = list.filter(f => new Date(f.date) <= endDate);
+    
     list.sort((a, b) => {
       let c = 0;
       if (sortField === 'date') c = new Date(a.date).getTime() - new Date(b.date).getTime();
@@ -43,7 +52,7 @@ export default function HistorialPage() {
       return sortOrder === 'asc' ? c : -c;
     });
     return list;
-  }, [search, statusFilter, sortField, sortOrder]);
+  }, [search, statusFilter, startDate, endDate, sortField, sortOrder]);
 
   const toggleAll = () => {
     if (selectedIds.length === flights.length && flights.length > 0) {
@@ -75,32 +84,61 @@ export default function HistorialPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl lg:text-headline-lg text-[#001F2D] font-bold">Historial de Vuelos</h1>
-          <p className="text-xs sm:text-sm text-[#475569] mt-1">{flights.length} vuelos registrados</p>
+          <h1 className="text-xl sm:text-2xl lg:text-headline-lg text-[#001F2D] font-bold">Historial de Proyectos</h1>
+          <p className="text-xs sm:text-sm text-[#475569] mt-1">{flights.length} proyectos registrados</p>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col xl:flex-row gap-3 xl:items-center">
         <div className="relative flex-1">
           <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#475569]" />
-          <input id="search-flights" type="text" placeholder="Buscar por codigo o ubicacion..." value={search} onChange={e => setSearch(e.target.value)} className="hmi-input pl-10" />
+          <input id="search-flights" type="text" placeholder="Buscar por codigo o ubicacion..." value={search} onChange={e => setSearch(e.target.value)} className="hmi-input pl-10 w-full" />
         </div>
-        <div className="flex items-center gap-2">
-          <FontAwesomeIcon icon={faFilter} className="w-4 h-4 text-[#475569]" />
-          <select id="filter-status" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="hmi-select w-auto min-w-[160px]">
-            <option value="all">Todos</option>
-            <option value="completed">Completados</option>
-            <option value="in_progress">En Progreso</option>
-            <option value="failed">Fallidos</option>
-          </select>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex items-center gap-2 relative">
+            <span className="text-xs text-[#475569] font-bold uppercase tracking-wider">Desde:</span>
+            <DatePicker 
+              selected={startDate} 
+              onChange={(date: Date | null) => setStartDate(date)} 
+              selectsStart 
+              startDate={startDate} 
+              endDate={endDate} 
+              dateFormat="dd/MM/yyyy" 
+              className="hmi-input w-28 text-sm" 
+              placeholderText="dd/mm/aaaa"
+            />
+          </div>
+          <div className="flex items-center gap-2 relative">
+            <span className="text-xs text-[#475569] font-bold uppercase tracking-wider">Hasta:</span>
+            <DatePicker 
+              selected={endDate} 
+              onChange={(date: Date | null) => setEndDate(date)} 
+              selectsEnd 
+              startDate={startDate} 
+              endDate={endDate} 
+              minDate={startDate || undefined} 
+              dateFormat="dd/MM/yyyy" 
+              className="hmi-input w-28 text-sm"
+              placeholderText="dd/mm/aaaa"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <FontAwesomeIcon icon={faFilter} className="w-4 h-4 text-[#475569]" />
+            <select id="filter-status" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="hmi-select w-full sm:w-auto min-w-[140px]">
+              <option value="all">Todos</option>
+              <option value="completed">Completados</option>
+              <option value="in_progress">En Progreso</option>
+              <option value="failed">Fallidos</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <DataCard title="Registro de Vuelos" icon={faHistory}>
+      <DataCard title="Registro de Proyectos" icon={faHistory}>
         {/* Acciones Masivas */}
         {selectedIds.length > 0 && (
           <div className="mb-4 p-3 bg-[#F8F9FA] border border-[#C2C7CC] rounded-lg flex flex-wrap items-center gap-4 animate-fade-in">
-            <span className="text-sm font-bold text-[#001F2D]">{selectedIds.length} vuelos seleccionados</span>
+            <span className="text-sm font-bold text-[#001F2D]">{selectedIds.length} proyectos seleccionados</span>
             <div className="flex gap-2">
               <button onClick={handleBulkDownload} className="hmi-btn-secondary py-1.5 text-xs">
                 <FontAwesomeIcon icon={faDownload} className="w-3 h-3" /> Descargar CSVs
@@ -124,11 +162,12 @@ export default function HistorialPage() {
                     className="w-4 h-4 rounded border-[#C2C7CC] text-[#A8CF45] focus:ring-[#A8CF45]"
                   />
                 </th>
+                <th onClick={() => toggleSort('date')}><span className="cursor-pointer">Fecha y Hora <FontAwesomeIcon icon={sortIcon('date')} className="w-3 h-3 ml-1 opacity-50" /></span></th>
                 <th>Codigo</th>
                 <th onClick={() => toggleSort('location')}><span className="cursor-pointer">Ubicacion <FontAwesomeIcon icon={sortIcon('location')} className="w-3 h-3 ml-1 opacity-50" /></span></th>
-                <th onClick={() => toggleSort('date')}><span className="cursor-pointer">Fecha <FontAwesomeIcon icon={sortIcon('date')} className="w-3 h-3 ml-1 opacity-50" /></span></th>
                 <th onClick={() => toggleSort('duration')}><span className="cursor-pointer">Duracion <FontAwesomeIcon icon={sortIcon('duration')} className="w-3 h-3 ml-1 opacity-50" /></span></th>
                 <th onClick={() => toggleSort('samplesCollected')}><span className="cursor-pointer">Muestras <FontAwesomeIcon icon={sortIcon('samplesCollected')} className="w-3 h-3 ml-1 opacity-50" /></span></th>
+                <th>Vuelos</th>
                 <th>GPS</th>
                 <th>Estado</th>
                 <th>Acciones</th>
@@ -136,8 +175,8 @@ export default function HistorialPage() {
             </thead>
             <tbody>
               {flights.map(f => (
-                <tr key={f.id} className={selectedIds.includes(f.id) ? 'bg-[#A8CF45]/10' : ''}>
-                  <td className="text-center">
+                <tr key={f.id} className={`${selectedIds.includes(f.id) ? 'bg-[#A8CF45]/10' : ''} cursor-pointer hover:bg-slate-50 transition-colors`} onClick={() => router.push(`/historial/${f.id}`)}>
+                  <td className="text-center" onClick={(e) => e.stopPropagation()}>
                     <input 
                       type="checkbox" 
                       checked={selectedIds.includes(f.id)}
@@ -145,11 +184,12 @@ export default function HistorialPage() {
                       className="w-4 h-4 rounded border-[#C2C7CC] text-[#A8CF45] focus:ring-[#A8CF45]"
                     />
                   </td>
-                  <td><Link href={`/historial/${f.id}`} className="font-bold text-[#001F2D] hover:text-[#A8CF45]">{f.flightCode}</Link></td>
+                  <td className="font-bold text-[#001F2D] whitespace-nowrap" suppressHydrationWarning>{new Date(f.date).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                  <td><span className="font-bold text-[#A8CF45]">{f.flightCode}</span></td>
                   <td className="text-[#475569] max-w-[180px] truncate">{f.location}</td>
-                  <td className="text-[#475569] whitespace-nowrap">{new Date(f.date).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
                   <td className="hmi-metric">{fmtDur(f.duration)}</td>
                   <td className="hmi-metric">{f.samplesCollected.toLocaleString('es-CL')}</td>
+                  <td className="hmi-metric text-center">{f.flightsCount || 1}</td>
                   <td><span className={`text-xs font-bold ${f.gpsQuality.fixType === 'RTK' ? 'text-[#A8CF45]' : 'text-amber-500'}`}>{f.gpsQuality.fixType}</span></td>
                   <td>
                     <span className={`hmi-badge ${f.status === 'completed' ? 'hmi-badge-ok' : f.status === 'failed' ? 'hmi-badge-critical' : 'hmi-badge-neutral'}`}>
@@ -157,7 +197,7 @@ export default function HistorialPage() {
                       {f.status === 'completed' ? 'OK' : 'FALLO'}
                     </span>
                   </td>
-                  <td>
+                  <td onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-1">
                       <Link href={`/historial/${f.id}`} className="w-8 h-8 flex items-center justify-center rounded hover:bg-[#A8CF45]/10 text-[#475569]" title="Ver"><FontAwesomeIcon icon={faEye} className="w-3.5 h-3.5" /></Link>
                       <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-[#A8CF45]/10 text-[#475569]" title="Exportar"><FontAwesomeIcon icon={faDownload} className="w-3.5 h-3.5" /></button>

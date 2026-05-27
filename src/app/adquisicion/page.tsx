@@ -13,6 +13,7 @@ import MetricDisplay from '@/components/ui/MetricDisplay';
 import StatusIndicator from '@/components/ui/StatusIndicator';
 import { useRouter } from 'next/navigation';
 import { mockLiveTelemetry, mockSystemStatus } from '@/lib/mock/data';
+import { useMockProjectState } from '@/borrar/useMockProjectState';
 import dynamic from 'next/dynamic';
 
 const MagFieldChart = dynamic(() => import('@/borrar/MagFieldChart'), { ssr: false });
@@ -29,9 +30,19 @@ type AcqState = 'idle' | 'waiting_gps' | 'ready' | 'acquiring' | 'stopped' | 'er
 
 export default function AdquisicionPage() {
   const router = useRouter();
-  // Inicia automaticamente la adquisicion apenas entramos a la vista
-  const [acqState, setAcqState] = useState<AcqState>('acquiring');
+  const { state: mockAcquisitionStatus, updateState, isLoaded } = useMockProjectState();
+
+  // Inicia automaticamente la adquisicion apenas entramos a la vista (basado en el estado)
+  const [acqState, setAcqState] = useState<AcqState>('idle');
   const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (isLoaded) {
+      setAcqState(mockAcquisitionStatus.projectState === 'active' ? 'acquiring' : 'idle');
+      setIsPaused(mockAcquisitionStatus.dataCaptureStatus === 'idle' && mockAcquisitionStatus.projectState === 'active');
+    }
+  }, [isLoaded, mockAcquisitionStatus.projectState, mockAcquisitionStatus.dataCaptureStatus]);
+
   const [elapsed, setElapsed] = useState(0);
   const [samples, setSamples] = useState(0);
   const [magField, setMagField] = useState(24200.0);
@@ -92,6 +103,7 @@ export default function AdquisicionPage() {
 
           if (idx >= points.length - 1) {
              setAcqState('stopped'); // Finalizar si llegamos al tope
+             updateState({ projectState: 'stopped', dataCaptureStatus: 'idle' });
           }
         }, 500); // Se actualiza cada 0.5 segundos (500ms) como lo pediste
       });
@@ -110,14 +122,22 @@ export default function AdquisicionPage() {
 
   const handleStart = () => {
     setAcqState('acquiring'); setIsPaused(false);
+    updateState({ projectState: 'active', dataCaptureStatus: 'capturing' });
     sampleCountRef.current = 0;
     setElapsed(0); setSamples(0);
     setChartTimestamps([]); setChartValues([]);
     setChartXValues([]); setChartYValues([]); setChartZValues([]);
   };
 
+  const handlePauseToggle = () => {
+    const newPaused = !isPaused;
+    setIsPaused(newPaused);
+    updateState({ dataCaptureStatus: newPaused ? 'idle' : 'capturing' });
+  };
+
   const handleStop = () => {
     setAcqState('stopped'); setIsPaused(false);
+    updateState({ projectState: 'stopped', dataCaptureStatus: 'idle' });
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
@@ -146,7 +166,7 @@ export default function AdquisicionPage() {
           )}
           {acqState === 'acquiring' && (
             <>
-              <button onClick={() => setIsPaused(!isPaused)} className="hmi-btn-secondary"><FontAwesomeIcon icon={isPaused ? faPlay : faPause} className="w-4 h-4" /> {isPaused ? 'Reanudar' : 'Pausar'}</button>
+              <button onClick={handlePauseToggle} className="hmi-btn-secondary"><FontAwesomeIcon icon={isPaused ? faPlay : faPause} className="w-4 h-4" /> {isPaused ? 'Reanudar' : 'Pausar'}</button>
               <button onClick={handleStop} className="hmi-btn-critical"><FontAwesomeIcon icon={faStop} className="w-4 h-4" /> Detener</button>
             </>
           )}
@@ -161,12 +181,24 @@ export default function AdquisicionPage() {
 
       {/* Estado de adquisicion visual */}
       {(acqState === 'acquiring' || acqState === 'stopped') && (
-        <div className={`p-4 rounded-hmi-md border-2 ${acqState === 'stopped' ? 'border-[#475569] bg-[#475569]/5' : (isPaused ? 'border-amber-500 bg-amber-500/5' : 'border-[#A8CF45] bg-[#A8CF45]/5')} flex flex-wrap items-center justify-between gap-4`}>
+        <div className={`p-4 rounded-hmi-md border-2 ${acqState === 'stopped' ? 'border-[#475569] bg-[#475569]/5' : (isPaused ? 'border-amber-500 bg-amber-500/5' : 'border-[#A8CF45] bg-[#A8CF45]/5')} flex flex-col sm:flex-row flex-wrap sm:items-center justify-between gap-4`}>
           <div className="flex items-center gap-3">
             <div className={`w-3 h-3 rounded-full ${acqState === 'stopped' ? 'bg-[#475569]' : (isPaused ? 'bg-amber-500' : 'bg-[#A8CF45] animate-pulse')}`} />
-            <span className="text-sm font-bold text-[#001F2D]">
-              {acqState === 'stopped' ? 'VUELO FINALIZADO' : (isPaused ? 'PAUSADO' : 'ADQUIRIENDO DATOS')}
-            </span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-[#001F2D] uppercase">
+                  {acqState === 'stopped' ? 'PROYECTO FINALIZADO' : 'PROYECTO EN CURSO'}
+                </span>
+                {mockAcquisitionStatus.source === 'hardware' && (
+                  <span className="px-2 py-0.5 bg-[#001F2D] text-[#A8CF45] rounded-full text-[10px] uppercase font-bold">
+                    Hardware
+                  </span>
+                )}
+              </div>
+              <span className={`text-xs font-bold uppercase ${acqState === 'stopped' ? 'text-[#475569]' : (isPaused ? 'text-amber-600' : 'text-[#A8CF45]')}`}>
+                {acqState === 'stopped' ? 'Sin captura de datos' : (isPaused ? 'Captura Pausada' : 'Adquiriendo Datos')}
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-6">
             <MetricDisplay value={fmtTime(elapsed)} label="Tiempo" icon={faClock} size="sm" />

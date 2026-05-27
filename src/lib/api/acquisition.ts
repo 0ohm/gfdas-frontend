@@ -3,8 +3,15 @@ import { api, type ApiResponse } from './config';
 
 /* ─── Tipos ─── */
 export interface AcquisitionStatus {
-  state: 'idle' | 'acquiring' | 'paused' | 'error' | 'finalizing';
-  currentFlightId: string | null;
+  // Project general state
+  projectId: string | null;
+  projectState: 'active' | 'paused' | 'stopped';
+  source: 'dashboard' | 'hardware' | null;
+  isMetadataIncomplete: boolean;
+  
+  // Data capture state
+  dataCaptureStatus: 'idle' | 'capturing';
+
   startTime: string | null;
   elapsedTime: number;          // Segundos
   samplesCollected: number;
